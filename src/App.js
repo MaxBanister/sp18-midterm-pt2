@@ -17,7 +17,8 @@ class App extends Component {
       web3: null,
       /// Where we track all events emit by the contract for display
       events: [],
-      numEvents: 0
+      numEvents: 0,
+      lastTxHash: 0
     }
 
     this.sendEther = this.sendEther.bind(this);
@@ -26,7 +27,7 @@ class App extends Component {
   }
 
   componentWillMount() {
-    
+
     // Get network provider and web3 instance.
     // See utils/getWeb3 for more info.
     getWeb3
@@ -47,6 +48,7 @@ class App extends Component {
     const contract = require('truffle-contract');
     const multiSig = contract(MultiSigWallet);
     multiSig.setProvider(this.state.web3.currentProvider);
+    console.log(this.state.web3.currentProvider);
     multiSig.deployed().then((instance) => {
       /// Save our contract obj in internal state
       this.setState({multiSigContract: instance})
@@ -55,8 +57,8 @@ class App extends Component {
 
 
   /// TODO: Finish implementing the watchLogs() function. This should watch for all the events
-  /// that we define in lines 61-64. Most of this is implemented. There are just a few pieces 
-  /// for you to fill in. This should give you practice working with the state object in 
+  /// that we define in lines 61-64. Most of this is implemented. There are just a few pieces
+  /// for you to fill in. This should give you practice working with the state object in
   /// reactJs.
 
   watchLogs() {
@@ -67,16 +69,22 @@ class App extends Component {
 
     /// save reference to global component obj for later user
     var that = this;
-    
+
     depositFundsEvent.watch(function(error, result) {
       if (error) {
         console.log(error);
       } else {
         /// YOUR CODE HERE -- what do we need to do if we want to log a component?
-        /// 'result.event' will give you the event itself, so try adding that to the 
+        /// 'result.event' will give you the event itself, so try adding that to the
         /// list of events we are tracking in the state object. REMEMBER TO USE 'that'
         /// instead of 'this'. You can use 'that.state.item' to access 'item' from the state
         /// and 'that.setState({item: value})' to reset the value of 'item' to 'value'
+        console.log(result);
+        if (result.transactionHash !== that.state.lastTxHash) {
+          that.setState({events: that.state.events.concat(result.event)});
+          that.setState({numEvents: that.state.numEvents + 1});
+          that.setState({lastTxHash: result.transactionHash});
+        }
       }
     })
 
@@ -84,7 +92,8 @@ class App extends Component {
       if (error) {
         console.log(error);
       } else {
-        /// YOUR CODE HERE -- same instructions as above
+        that.setState({events: that.state.events.concat(result.event)});
+        that.setState({numEvents: that.state.numEvents + 1});
       }
     })
 
@@ -92,7 +101,8 @@ class App extends Component {
       if (error) {
         console.log(error);
       } else {
-        /// YOUR CODE HERE -- same instructions as above
+        that.setState({events: that.state.events.concat(result.event)});
+        that.setState({numEvents: that.state.numEvents + 1});
       }
     })
 
@@ -100,17 +110,20 @@ class App extends Component {
       if (error) {
         console.log(error);
       } else {
-        /// YOUR CODE HERE -- same instructions as above
+        that.setState({events: that.state.events.concat(result.event)});
+        that.setState({numEvents: that.state.numEvents + 1});
       }
     })
   }
 
-  /// TODO: Implement the sendEther function, which is called when we click the 
+  /// TODO: Implement the sendEther function, which is called when we click the
   /// "Send Ether" button in the browser. Use the web3 object from this react component's
   /// state (i.e. 'this.state.web3.....'). You'll want to use the 'sendTransaction'
   /// function, which is documented here -- https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethsendtransaction
   sendEther() {
-    /// YOUR CODE HERE. This should only be 1 line.
+    console.log(this.state.multiSigContract);
+    this.state.web3.eth.sendTransaction({from: this.state.web3.eth.coinbase, to: this.state.multiSigContract.address, value:100}, () => {console.log('Sending ether.');});
+
   }
 
   render() {
